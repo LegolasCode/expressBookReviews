@@ -11,15 +11,20 @@ const public_users = express.Router();
 public_users.post("/register", (req, res) => {
   const { username, password } = req.body;
 
-  if (!isValid(username, password)) {
-    return res.status(400).json({ message: "Invalid username or password" });
+  if (!username || !password) {
+    return res.status(400).json({ message: "Username and password required" });
   }
 
-  if (users[username]) {
+  // Cek apakah user sudah ada di dalam array
+  const userExists = users.some((user) => user.username === username);
+
+  if (userExists) {
     return res.status(400).json({ message: "Username already exists" });
   }
 
-  users[username] = { password };
+  // SIMPAN SEBAGAI OBJEK KE DALAM ARRAY (Agar cocok dengan .find() di login)
+  users.push({ username: username, password: password });
+
   return res.status(201).json({ message: "User registered successfully" });
 });
 
@@ -32,9 +37,7 @@ public_users.get("/books", (req, res) => {
     resolve(books);
   })
     .then((data) => res.status(200).json(data))
-    .catch(() =>
-      res.status(500).json({ message: "Failed to fetch books" })
-    );
+    .catch(() => res.status(500).json({ message: "Failed to fetch books" }));
 });
 
 /**
@@ -52,9 +55,7 @@ public_users.get("/isbn/:isbn", (req, res) => {
     }
   })
     .then((book) => res.status(200).json(book))
-    .catch((err) =>
-      res.status(404).json({ message: err })
-    );
+    .catch((err) => res.status(404).json({ message: err }));
 });
 
 /**
@@ -66,7 +67,7 @@ public_users.get("/author/:author", (req, res) => {
 
   new Promise((resolve, reject) => {
     const result = Object.values(books).filter(
-      (book) => book.author.toLowerCase() === author
+      (book) => book.author.toLowerCase() === author,
     );
 
     if (result.length > 0) {
@@ -76,9 +77,7 @@ public_users.get("/author/:author", (req, res) => {
     }
   })
     .then((booksByAuthor) => res.status(200).json(booksByAuthor))
-    .catch((err) =>
-      res.status(404).json({ message: err })
-    );
+    .catch((err) => res.status(404).json({ message: err }));
 });
 
 /**
@@ -90,7 +89,7 @@ public_users.get("/title/:title", (req, res) => {
 
   new Promise((resolve, reject) => {
     const result = Object.values(books).filter(
-      (book) => book.title.toLowerCase() === title
+      (book) => book.title.toLowerCase() === title,
     );
 
     if (result.length > 0) {
@@ -100,9 +99,7 @@ public_users.get("/title/:title", (req, res) => {
     }
   })
     .then((booksByTitle) => res.status(200).json(booksByTitle))
-    .catch((err) =>
-      res.status(404).json({ message: err })
-    );
+    .catch((err) => res.status(404).json({ message: err }));
 });
 
 /**
