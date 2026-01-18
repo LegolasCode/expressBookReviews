@@ -8,6 +8,11 @@ const app = express();
 
 app.use(express.json());
 
+// Public routes
+app.use("/", genl_routes);
+// Protected routes (butuh login)
+app.use("/customer", customer_routes);
+
 // Session middleware untuk customer
 app.use(
   "/customer",
@@ -15,7 +20,7 @@ app.use(
     secret: "fingerprint_customer",
     resave: true,
     saveUninitialized: true,
-  })
+  }),
 );
 
 // Authentication middleware
@@ -40,11 +45,5 @@ app.use("/customer/auth/*", function auth(req, res, next) {
 });
 
 const PORT = 5000;
-
-// Protected routes (butuh login)
-app.use("/customer", customer_routes);
-
-// Public routes
-app.use("/", genl_routes);
 
 app.listen(PORT, () => console.log("Server is running"));

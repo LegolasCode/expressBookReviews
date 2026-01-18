@@ -3,6 +3,13 @@ let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
+const axios = require("axios");
+
+// router/general.js
+public_users.get('/', function (req, res) {
+  // Ini yang akan dipanggil oleh axios.get("http://localhost:5000/")
+  return res.status(200).json(books); 
+});
 
 /**
  * POST /register
@@ -30,76 +37,101 @@ public_users.post("/register", (req, res) => {
 
 /**
  * GET /books
- * Mengambil seluruh daftar buku (Promise)
+ * Mengambil seluruh daftar buku (Axios)
  */
 public_users.get("/books", (req, res) => {
-  new Promise((resolve) => {
-    resolve(books);
-  })
-    .then((data) => res.status(200).json(data))
-    .catch(() => res.status(500).json({ message: "Failed to fetch books" }));
+  axios
+    .get("http://localhost:5000/") // Mengambil data dari endpoint utama
+    .then((response) => {
+      res.status(200).json(response.data);
+    })
+    .catch((err) => {
+      res
+        .status(500)
+        .json({ message: "Error fetching books", error: err.message });
+    });
 });
 
 /**
  * GET /isbn/:isbn
- * Search by ISBN – Using Promises
+ * Search by ISBN – Using Axios
  */
 public_users.get("/isbn/:isbn", (req, res) => {
   const isbn = req.params.isbn;
-
-  new Promise((resolve, reject) => {
-    if (books[isbn]) {
-      resolve(books[isbn]);
-    } else {
-      reject("Book not found");
-    }
-  })
-    .then((book) => res.status(200).json(book))
-    .catch((err) => res.status(404).json({ message: err }));
+  axios
+    .get("http://localhost:5000/")
+    .then((response) => {
+      const allBooks = response.data;
+      if (allBooks[isbn]) {
+        res.status(200).json(allBooks[isbn]);
+      } else {
+        res.status(404).json({ message: "Book not found" });
+      }
+    })
+    .catch((err) => {
+      res
+        .status(500)
+        .json({ message: "Error fetching book by ISBN", error: err.message });
+    });
 });
 
-/**
- * GET /author/:author
- * Search by Author – Using Promises
- */
-public_users.get("/author/:author", (req, res) => {
-  const author = req.params.author.toLowerCase();
+// Mengambil detail buku berdasarkan Author menggunakan Axios
+public_users.get("/author/:author", function (req, res) {
+  const authorParam = req.params.author.toLowerCase();
 
-  new Promise((resolve, reject) => {
-    const result = Object.values(books).filter(
-      (book) => book.author.toLowerCase() === author,
-    );
+  // Gunakan port yang sesuai dengan server kamu (biasanya 5000)
+  axios
+    .get("http://localhost:5000/")
+    .then((response) => {
+      const allBooks = response.data;
+      console.log("Data dari server:", allBooks); // Lihat apakah field 'author' ada
+      console.log("Mencari author:", authorParam);
 
-    if (result.length > 0) {
-      resolve(result);
-    } else {
-      reject("No books found for this author");
-    }
-  })
-    .then((booksByAuthor) => res.status(200).json(booksByAuthor))
-    .catch((err) => res.status(404).json({ message: err }));
+      const filteredBooks = Object.values(allBooks).filter(
+        (book) => book.author.toLowerCase() === authorParam,
+      );
+
+      if (filteredBooks.length > 0) {
+        res.status(200).json(filteredBooks);
+      } else {
+        // Penanganan error jika penulis tidak ditemukan (Sesuai Feedback)
+        res.status(404).json({ message: "No books found for this author" });
+      }
+    })
+    .catch((err) => {
+      // Penanganan error jika server atau Axios bermasalah
+      res.status(500).json({
+        message: "Error fetching data using Axios",
+        error: err.message,
+      });
+    });
 });
 
 /**
  * GET /title/:title
- * Search by Title – Using Promises
+ * Search by Title – Using Axios
  */
 public_users.get("/title/:title", (req, res) => {
-  const title = req.params.title.toLowerCase();
+  const titleParam = req.params.title.toLowerCase();
+  axios
+    .get("http://localhost:5000/")
+    .then((response) => {
+      const allBooks = response.data;
+      const filteredBooks = Object.values(allBooks).filter(
+        (book) => book.title.toLowerCase() === titleParam,
+      );
 
-  new Promise((resolve, reject) => {
-    const result = Object.values(books).filter(
-      (book) => book.title.toLowerCase() === title,
-    );
-
-    if (result.length > 0) {
-      resolve(result);
-    } else {
-      reject("No books found with this title");
-    }
-  })
-    .then((booksByTitle) => res.status(200).json(booksByTitle))
-    .catch((err) => res.status(404).json({ message: err }));
+      if (filteredBooks.length > 0) {
+        res.status(200).json(filteredBooks);
+      } else {
+        res.status(404).json({ message: "No books found with this title" });
+      }
+    })
+    .catch((err) => {
+      res
+        .status(500)
+        .json({ message: "Error fetching book by title", error: err.message });
+    });
 });
 
 /**

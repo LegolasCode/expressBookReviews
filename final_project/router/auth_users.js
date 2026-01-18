@@ -45,33 +45,24 @@ regd_users.post("/login", (req, res) => {
     accessToken,
   };
 
-  return res.status(200).json({ message: "User successfully logged in" });
+  return res.status(200).json({ message: "Login successful" });
 });
 
 // Tambah / update review buku
 regd_users.put("/auth/review/:isbn", (req, res) => {
   const isbn = req.params.isbn;
-  const review = req.body.review;
-  const username = req.user; // dari middleware auth
+  // Mengambil dari body, jika tidak ada ambil dari query
+  const review = req.body.review || req.query.review;
+  const username = req.session.authorization.username;
 
   if (!review) {
     return res.status(400).json({ message: "Review is required" });
   }
 
-  if (!books[isbn]) {
-    return res.status(404).json({ message: "Book not found" });
-  }
-
-  // Pastikan reviews adalah object
-  if (!books[isbn].reviews) {
-    books[isbn].reviews = {};
-  }
-
-  // Simpan / update review berdasarkan username
+  // Logic simpan review...
   books[isbn].reviews[username] = review;
-
   return res.status(200).json({
-    message: "Review added/updated successfully",
+    message: `The review for the book with ISBN ${isbn} has been added/updated.`,
     reviews: books[isbn].reviews,
   });
 });
